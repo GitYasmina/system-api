@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+    <http:listener-config name="system_listenerConfig">
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+    </http:listener-config>
+    <apikit:config name="s-test-muleyasmina-config" api="resource::96feec65-ff0f-41cf-8755-9197aa1f1951:s-test-muleyasmina:1.0.0:raml:zip:s-test-muleyasmina.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="b1e736c1-3941-49fe-a66f-3ed2b7fc54b1" >
+		<salesforce:oauth-user-pass-connection consumerKey="3MVG9fTLmJ60pJ5ITt2qHB3A10HgjuVoN8hGCbE4ZKq7hEgMAE._W.giZtfXwVaM23IEeGkZN46KTbqPXAVlz" consumerSecret="F7B0CD386A3A5786F7FB9C359EB20C1F8EBD069927507AE06ACCF6F8F6A912EE" username="mulesofttest@deloitte.es" password="mulesoft-test-1" securityToken="flD3HTHrMcF3ehnz3yzbpwsRw" />
+	</salesforce:sfdc-config>
+	<flow name="s-test-muleyasmina-main">
+        <http:listener config-ref="system_listenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="s-test-muleyasmina-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="s-test-muleyasmina-console">
+        <http:listener config-ref="system_listenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="s-test-muleyasmina-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\accounts:s-test-muleyasmina-config">
+        <logger level="INFO" doc:name="start" doc:id="54d85769-16ed-443f-a8af-1f548a7999a9" message="start"/>
+		<salesforce:query doc:name="Query_Accounts" doc:id="b0010ed9-f1a6-4f87-a903-ccdb1e02d6a1" config-ref="Salesforce_Config" target="cuentas">
+			<salesforce:salesforce-query ><![CDATA[SELECT 
+  Id, Name, AccountNumber, Industry, Description, BillingStreet	
+FROM 
+  Account]]></salesforce:salesforce-query>
+			<salesforce:headers />
+		</salesforce:query>
+		<salesforce:query doc:name="Query_Contacts" doc:id="c5fbb4a6-0536-4804-aff2-4965209773d9" config-ref="Salesforce_Config" target="contactos" >
+			<salesforce:salesforce-query ><![CDATA[SELECT 
+  Id, AccountId, LastName, FirstName, Salutation, Name, MailingStreet
+FROM 
+  Contact]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="5553a294-50a2-4b15-8faa-df8ac26c3918">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    id: 1,
+    name: "Yasmina Achahbar",
+    email: "yachahabaraelandalouss@deloitte.es"
+  }
+] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="cuentas" ><![CDATA[%dw 2.0
+output application/json
+---
+vars.cuentas map {
+    id: $.Id,
+    nombre: $.Name,
+    numeroCuenta: $.AccountNumber
+}]]></ee:set-variable>
+				<ee:set-variable variableName="contactos" ><![CDATA[%dw 2.0
+output application/json
+---
+vars.contactos map {
+    id: $.Id,
+    nombre: $.Name,
+    email: $.Email
+}
+]]></ee:set-variable>
+			</ee:variables>
+        </ee:transform>
+		<logger level="DEBUG" doc:name="debug" doc:id="8a2ed3c8-ecf2-4a48-a58d-19afaa21b9d7" message="#[payload]"/>
+		<logger level="INFO" doc:name="end" doc:id="017e0b7e-4971-40f5-b605-f61b48a2621a" message="end"/>
+    </flow>
+</mule>
